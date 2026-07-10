@@ -28,6 +28,39 @@ const synonyms = {
   "jakarta": ["ibu kota", "DKI Jakarta"]
 };
 
+// Merangkai kalimat atau daftar judul terkait menjadi sebuah paragraf berita mengalir
+function makeNarrative(text) {
+  // Bersihkan nama media
+  let clean = text;
+  const mediaRegex = /\s*(?:detikNews|detikFinance|detikcom|Kompas\.com|Liputan6|Antara\s*News|Bloomberg\s*Indonesia|Tribrata\s*News|Republika)\b/gi;
+  clean = clean.replace(mediaRegex, "");
+  
+  // Pisahkan kalimat berdasarkan spasi ganda, baris baru, atau titik
+  let lines = clean.split(/[.\n]|\s{2,}/).map(l => l.trim()).filter(l => l.length > 15);
+  
+  if (lines.length === 0) {
+    return text;
+  }
+  
+  if (lines.length === 1) {
+    return lines[0];
+  }
+  
+  // Rangkai menjadi paragraf naratif mengalir
+  let narrative = `Dilaporkan bahwa ${lines[0]}. `;
+  if (lines[1]) {
+    narrative += `Perkembangan terbaru juga menyebutkan bahwa ${lines[1].charAt(0).toLowerCase() + lines[1].slice(1)}. `;
+  }
+  if (lines[2]) {
+    narrative += `Selain itu, dilaporkan pula bahwa ${lines[2].charAt(0).toLowerCase() + lines[2].slice(1)}. `;
+  }
+  if (lines[3]) {
+    narrative += `Pihak berwenang juga menyoroti aspek terkait ${lines[3].charAt(0).toLowerCase() + lines[3].slice(1)}. `;
+  }
+  
+  return narrative;
+}
+
 // Fungsi helper untuk rephrase sederhana jika tidak menggunakan API
 function ruleBasedRephrase(text, localTarget = "Cikarang") {
   let paragraphs = text.split('\n').filter(p => p.trim().length > 0);
@@ -47,7 +80,7 @@ function ruleBasedRephrase(text, localTarget = "Cikarang") {
 
     // Modifikasi struktur kalimat di awal atau akhir paragraf
     if (index === 0) {
-      rewritten = `**RADAR CIKARANG** - ${rewritten}`;
+      rewritten = `${rewritten}`; // Hilangkan penambahan double header di sini
     } else if (index === paragraphs.length - 1) {
       const phrase = localPhrases[Math.floor(Math.random() * localPhrases.length)];
       rewritten = `${rewritten} ${phrase}`;
@@ -208,8 +241,11 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
     rewrittenTitle = rewrittenTitle.substring(0, 66) + "...";
   }
 
+  // Bersihkan konten asli dan buat narasi mengalir jika kontennya berupa daftar headline
+  let cleanContent = makeNarrative(content);
+
   // Rewrite konten asli secara rule-based
-  let baseContent = ruleBasedRephrase(content);
+  let baseContent = ruleBasedRephrase(cleanContent);
 
   // Tentukan Dateline Lokasi berdasarkan kategori
   const locationPrefix = category === "Cikarang" ? "**CIKARANG**" : category === "Bekasi" ? "**BEKASI**" : "**JAKARTA**";

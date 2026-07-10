@@ -141,10 +141,10 @@ export default function App() {
             title = titleParts.join(" - ");
           }
 
-          // Bersihkan deskripsi HTML
-          const cleanDesc = item.description 
-            ? item.description.replace(/<[^>]*>/g, '').trim() 
-            : "";
+          // Bersihkan deskripsi HTML, buang bagian related coverage (ul)
+          let rawDesc = item.description || "";
+          rawDesc = rawDesc.replace(/<ul[\s\S]*?<\/ul>/gi, ""); // Buang daftar berita terkait dari Google News
+          const cleanDesc = rawDesc.replace(/<[^>]*>/g, '').trim();
 
           return {
             id: `live-${categoryName}-${index}-${Date.now()}`,
