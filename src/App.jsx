@@ -1,0 +1,711 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Newspaper, 
+  Sparkles, 
+  Search, 
+  Key, 
+  RefreshCw, 
+  Copy, 
+  Check, 
+  Send, 
+  Plus, 
+  TrendingUp, 
+  CheckCircle, 
+  AlertTriangle, 
+  XCircle, 
+  ChevronRight, 
+  BookOpen,
+  HelpCircle,
+  FileText,
+  Sun,
+  Moon
+} from 'lucide-react';
+import { rewriteNews, calculateSeoScore } from './aiRewriter';
+
+// Kumpulan Berita Populer Mock (Bahasa Indonesia)
+const INITIAL_POPULAR_NEWS = [
+  {
+    id: 1,
+    title: "Pemerintah Naikkan Subsidi Motor Listrik Jadi Rp 10 Juta Mulai Bulan Depan",
+    category: "Bisnis",
+    source: "Detik Finance",
+    url: "https://finance.detik.com/energi/d-7000000/insentif-motor-listrik-naik-jadi-rp-10-juta",
+    time: "2 jam yang lalu",
+    content: "Pemerintah memutuskan untuk meningkatkan insentif pembelian motor listrik baru dari sebelumnya Rp 7 juta menjadi Rp 10 juta per unit. Kebijakan ini diambil guna mempercepat adopsi kendaraan bermotor ramah lingkungan di Indonesia dan menekan polusi udara.\n\nMenteri Koordinator Bidang Kemaritiman dan Investasi menyatakan bahwa penambahan subsidi ini ditargetkan untuk menyasar 200.000 unit motor listrik baru hingga akhir tahun. Persyaratan penerima subsidi juga akan dipermudah, cukup menggunakan KTP untuk satu unit motor per orang.\n\nProdusen motor listrik lokal menyambut baik keputusan ini dan menyatakan kesiapannya untuk meningkatkan kapasitas produksi guna mengantisipasi lonjakan permintaan dari masyarakat."
+  },
+  {
+    id: 2,
+    title: "WhatsApp Rilis Fitur Baru Transkrip Pesan Suara ke Teks Bahasa Indonesia",
+    category: "Teknologi",
+    source: "Kompas Tekno",
+    url: "https://tekno.kompas.com/read/2026/07/10/whatsapp-rilis-fitur-transkrip-pesan-suara-bahasa-indonesia",
+    time: "4 jam yang lalu",
+    content: "Aplikasi pesan instan WhatsApp resmi meluncurkan fitur transkripsi suara menjadi teks secara otomatis dalam Bahasa Indonesia. Fitur ini sangat dinantikan oleh pengguna yang sering menerima pesan suara panjang namun tidak sempat mendengarkannya.\n\nUntuk menggunakan fitur ini, pengguna cukup mengaktifkan opsi transkrip di menu pengaturan obrolan. Proses konversi suara menjadi teks dilakukan langsung di dalam perangkat (on-device) untuk menjaga keamanan dan privasi percakapan pengguna.\n\nPihak WhatsApp menyatakan bahwa pemutakhiran ini dirilis secara bertahap kepada seluruh pengguna Android dan iOS mulai minggu ini."
+  },
+  {
+    id: 3,
+    title: "Rupiah Menguat Tajam ke Rp 15.200 per Dolar AS Setelah Pengumuman Inflasi",
+    category: "Ekonomi",
+    source: "Bloomberg Indonesia",
+    url: "https://www.bloombergtechnoz.com/detailnews/rupiah-menguat-ke-15200-setelah-inflasi-melandai",
+    time: "6 jam yang lalu",
+    content: "Nilai tukar rupiah terhadap dolar Amerika Serikat (AS) mengalami penguatan signifikan pada perdagangan hari ini. Rupiah ditutup menguat ke level Rp 15.200 per dolar AS setelah Bank Indonesia merilis data inflasi yang lebih rendah dari perkiraan pasar.\n\nAnalis pasar keuangan menyebutkan bahwa langkah stabilisasi suku bunga oleh Bank Indonesia serta meredanya kekhawatiran kenaikan suku bunga The Fed memicu aliran modal asing masuk kembali ke pasar keuangan domestik.\n\nPenguatan mata uang Garuda ini diproyeksikan akan terus berlanjut hingga akhir pekan seiring dengan sentimen positif dari data ekspor komoditas nasional."
+  },
+  {
+    id: 4,
+    title: "Konser Band Rock Terkenal di Jakarta Resmi Ditambah Menjadi Dua Hari",
+    category: "Hiburan",
+    source: "Liputan6",
+    url: "https://www.liputan6.com/showbiz/read/5000000/konser-rock-jakarta-ditambah-dua-hari-tiket-ludes",
+    time: "8 jam yang lalu",
+    content: "Antusiasme luar biasa dari para penggemar membuat promotor resmi menambah jadwal konser grup band rock legendaris asal Inggris di Jakarta. Tiket hari pertama yang ludes terjual dalam waktu kurang dari 10 menit menjadi alasan utama keputusan ini.\n\nKonser tambahan akan diselenggarakan pada hari berikutnya di lokasi yang sama, Stadion Gelora Bung Karno. Penjualan tiket untuk hari kedua akan dibuka besok pagi pukul 10.00 WIB melalui situs resmi promotor.\n\nPromotor mengimbau masyarakat untuk berhati-hati terhadap penipuan tiket dan hanya membeli melalui jalur resmi untuk menghindari calo."
+  },
+  {
+    id: 5,
+    title: "Polda Metro Jaya Terapkan Tilang Elektronik ETLE Baru di Jalur Protokol",
+    category: "Nasional",
+    source: "Antara News",
+    url: "https://www.antaranews.com/berita/4000000/polda-metro-jaya-tambah-etle-ai-jalur-protokol",
+    time: "10 jam yang lalu",
+    content: "Polda Metro Jaya resmi mengoperasikan 15 titik kamera tilang elektronik (ETLE) jenis baru dengan teknologi AI yang mampu mendeteksi pengendara yang menggunakan ponsel saat menyetir dan tidak mengenakan sabuk pengaman dengan akurasi 98%.\n\nDirektur Lalu Lintas Polda Metro menyatakan bahwa langkah ini dilakukan untuk meminimalisir interaksi langsung petugas dengan pelanggar dan menciptakan ketertiban lalu lintas yang lebih mandiri.\n\nBagi pelanggar yang terekam kamera ETLE, surat konfirmasi pelanggaran akan dikirimkan langsung ke alamat pemilik kendaraan sesuai STNK dalam kurun waktu 3 hari kerja."
+  },
+  {
+    id: 6,
+    title: "Kawasan Industri Cikarang Berlakukan Eco-Industrial Park Mulai Semester Depan",
+    category: "Cikarang",
+    source: "Radar Cikarang Regional",
+    url: "https://radarcikarang.com/kawasan-industri-cikarang-terapkan-eco-industrial-park-semester-depan",
+    time: "1 jam yang lalu",
+    content: "Pengelola kawasan industri terbesar di Cikarang mengumumkan komitmen baru untuk menerapkan konsep Eco-Industrial Park (EIP) terintegrasi. Kebijakan ini mewajibkan seluruh tenant pabrik untuk melakukan efisiensi energi dan pengelolaan limbah cair secara mandiri.\n\nLangkah ini diambil guna menyelaraskan industri manufaktur dengan standar lingkungan global dan mengurangi polusi industri di Kabupaten Bekasi. Pemerintah daerah menyambut positif inisiatif ini dan menjanjikan insentif pajak daerah bagi industri yang mematuhinya."
+  },
+  {
+    id: 7,
+    title: "Pemkot Bekasi Resmikan Taman Hutan Kota Baru di Pusat Kota untuk Ruang Publik",
+    category: "Bekasi",
+    source: "Bekasi Raya Post",
+    url: "https://www.bekasikota.go.id/berita/pemkot-bekasi-resmikan-taman-hutan-kota-baru-ahmad-yani",
+    time: "3 jam yang lalu",
+    content: "Pemerintah Kota Bekasi meresmikan ruang terbuka hijau baru seluas 5 hektar yang berlokasi di Jalan Ahmad Yani. Taman hutan kota ini dilengkapi dengan jogging track, area bermain ramah anak, dan amphitheater untuk kegiatan seni dan budaya pemuda Bekasi.\n\nWali Kota Bekasi menyampaikan bahwa taman ini dibangun gratis untuk umum sebagai upaya meningkatkan indeks kebahagiaan warga kota dan menyediakan paru-paru kota di tengah tingginya polusi udara."
+  }
+];
+
+export default function App() {
+  // State manajemen
+  const [popularNews, setPopularNews] = useState(INITIAL_POPULAR_NEWS);
+  const [selectedNews, setSelectedNews] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Semua");
+  const [apiKey, setApiKey] = useState("");
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+
+  // Efek Theme (Light / Dark Mode)
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+  
+  // Custom Input Form (jika user ingin menulis sendiri)
+  const [isAddingCustom, setIsAddingCustom] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customContent, setCustomContent] = useState("");
+  const [customCategory, setCustomCategory] = useState("Nasional");
+
+  // State Editor Hasil Rewrite
+  const [isRewriting, setIsRewriting] = useState(false);
+  const [rewrittenTitle, setRewrittenTitle] = useState("");
+  const [rewrittenContent, setRewrittenContent] = useState("");
+  const [metaDescription, setMetaDescription] = useState("");
+  const [slug, setSlug] = useState("");
+  const [focusKeywords, setFocusKeywords] = useState([]);
+  const [newKeywordInput, setNewKeywordInput] = useState("");
+  const [seoTips, setSeoTips] = useState([]);
+  const [seoScore, setSeoScore] = useState(0);
+
+  // Publikasi & Toast Notification
+  const [toastMessage, setToastMessage] = useState("");
+  const [publishedArticles, setPublishedArticles] = useState([]);
+
+  // Filter Kategori
+  const categories = ["Semua", "Cikarang", "Bekasi", "Nasional", "Bisnis", "Teknologi", "Ekonomi", "Hiburan"];
+
+  // Efek kalkulasi SEO Score secara real-time saat editor berubah
+  useEffect(() => {
+    if (rewrittenTitle || rewrittenContent || metaDescription) {
+      const score = calculateSeoScore(rewrittenTitle, rewrittenContent, metaDescription, focusKeywords);
+      setSeoScore(score);
+    }
+  }, [rewrittenTitle, rewrittenContent, metaDescription, focusKeywords]);
+
+  // Tampilkan toast sementara
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage("");
+    }, 3000);
+  };
+
+  // Handler Pilih Berita
+  const handleSelectNews = (news) => {
+    setSelectedNews(news);
+    setIsAddingCustom(false);
+    // Reset state editor
+    setRewrittenTitle("");
+    setRewrittenContent("");
+    setMetaDescription("");
+    setSlug("");
+    setFocusKeywords([]);
+    setSeoScore(0);
+  };
+
+  // Handler memicu Rewrite AI
+  const handleRewrite = async () => {
+    const titleToRewrite = isAddingCustom ? customTitle : selectedNews?.title;
+    const contentToRewrite = isAddingCustom ? customContent : selectedNews?.content;
+    const categoryToRewrite = isAddingCustom ? customCategory : selectedNews?.category;
+    const sourceToRewrite = isAddingCustom ? "Tulis Manual" : (selectedNews?.source || "Radar Cikarang");
+
+    if (!titleToRewrite || !contentToRewrite) {
+      showToast("Judul dan isi berita tidak boleh kosong!");
+      return;
+    }
+
+    setIsRewriting(true);
+    try {
+      const result = await rewriteNews(titleToRewrite, contentToRewrite, categoryToRewrite, apiKey, sourceToRewrite);
+      if (result.success) {
+        setRewrittenTitle(result.title);
+        setRewrittenContent(result.content);
+        setMetaDescription(result.metaDescription);
+        setSlug(result.slug);
+        setFocusKeywords(result.focusKeywords);
+        setSeoTips(result.seoTips);
+        showToast("Berita berhasil diduplikasi & dioptimasi SEO!");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Gagal melakukan rewrite berita.");
+    } finally {
+      setIsRewriting(false);
+    }
+  };
+
+  // Salin ke Papan Klip
+  const handleCopy = (text, message) => {
+    navigator.clipboard.writeText(text);
+    showToast(message || "Berhasil disalin ke clipboard!");
+  };
+
+  // Tambahkan kata kunci kustom
+  const handleAddKeyword = (e) => {
+    if (e.key === 'Enter' && newKeywordInput.trim()) {
+      const keyword = newKeywordInput.trim().toLowerCase();
+      if (!focusKeywords.includes(keyword)) {
+        setFocusKeywords([...focusKeywords, keyword]);
+      }
+      setNewKeywordInput("");
+    }
+  };
+
+  // Hapus kata kunci
+  const handleRemoveKeyword = (indexToRemove) => {
+    setFocusKeywords(focusKeywords.filter((_, i) => i !== indexToRemove));
+  };
+
+  // Publish simulasi berita ke radarcikarang.com
+  const handlePublish = () => {
+    if (!rewrittenTitle || !rewrittenContent) {
+      showToast("Konten hasil rewrite belum siap dipublikasi!");
+      return;
+    }
+
+    const newPublish = {
+      id: Date.now(),
+      title: rewrittenTitle,
+      slug: slug,
+      category: isAddingCustom ? customCategory : (selectedNews?.category || "Nasional"),
+      date: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      score: seoScore
+    };
+
+    setPublishedArticles([newPublish, ...publishedArticles]);
+    showToast("Berita berhasil dipublikasi ke radarcikarang.com!");
+  };
+
+  // Filter list berita populer berdasarkan pencarian dan kategori
+  const filteredNews = popularNews.filter(news => {
+    const matchesSearch = news.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          news.content.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === "Semua" || news.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="app-container">
+      {/* HEADER UTAMA */}
+      <header className="app-header">
+        <div className="logo-section">
+          <div className="logo-icon">
+            <Newspaper size={28} />
+          </div>
+          <div className="logo-text">
+            <h1>Radar Cikarang</h1>
+            <div className="logo-subtitle">AI News Duplicator & SEO Optimizer Engine</div>
+          </div>
+        </div>
+
+        <div className="api-section">
+          <div className="api-input-wrapper">
+            <Key size={16} className="api-icon" />
+            <input 
+              type="password" 
+              placeholder="Masukkan Gemini API Key (Opsional)..." 
+              className="api-input"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+            />
+          </div>
+          
+          <button 
+            className="theme-toggle-btn"
+            title={theme === 'dark' ? 'Aktifkan Mode Terang' : 'Aktifkan Mode Gelap'}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          <button 
+            className="btn btn-outline" 
+            onClick={() => {
+              setIsAddingCustom(true);
+              setSelectedNews(null);
+              setCustomTitle("");
+              setCustomContent("");
+              // Reset editor
+              setRewrittenTitle("");
+              setRewrittenContent("");
+              setMetaDescription("");
+              setSlug("");
+              setFocusKeywords([]);
+              setSeoScore(0);
+            }}
+          >
+            <Plus size={16} /> Tulis Manual
+          </button>
+        </div>
+      </header>
+
+      {/* DASHBOARD GRID */}
+      <main className="dashboard-grid">
+        
+        {/* PANEL KIRI: BERITA POPULER HARI INI */}
+        <section className="sidebar-panel">
+          <div className="panel-header">
+            <h2 className="panel-title">
+              <TrendingUp size={20} style={{ color: '#8b5cf6' }} />
+              Berita Populer
+            </h2>
+            <button 
+              className="refresh-btn" 
+              title="Refresh Berita"
+              onClick={() => {
+                showToast("Daftar berita populer diperbarui!");
+              }}
+            >
+              <RefreshCw size={14} />
+            </button>
+          </div>
+
+          {/* Filter Kategori */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className="category-tag"
+                style={{ 
+                  cursor: 'pointer',
+                  background: activeCategory === cat ? 'var(--primary-gradient)' : 'rgba(255,255,255,0.05)',
+                  color: activeCategory === cat ? '#fff' : 'var(--text-secondary)',
+                  border: 'none',
+                  whiteSpace: 'nowrap',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="api-input-wrapper" style={{ width: '100%' }}>
+            <Search size={16} className="api-icon" />
+            <input 
+              type="text" 
+              placeholder="Cari berita populer..." 
+              className="api-input"
+              style={{ width: '100%', paddingLeft: '2.25rem' }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Feed List */}
+          <div className="news-feed-list">
+            {filteredNews.map(news => (
+              <div 
+                key={news.id} 
+                className={`news-card ${selectedNews?.id === news.id ? 'active' : ''}`}
+                onClick={() => handleSelectNews(news)}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="category-tag">{news.category}</span>
+                  <a 
+                    href={news.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="news-card-source-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {news.source}
+                  </a>
+                </div>
+                <h3 className="news-card-title">{news.title}</h3>
+                <div className="news-card-footer">
+                  <span>{news.time}</span>
+                  <ChevronRight size={14} />
+                </div>
+              </div>
+            ))}
+            {filteredNews.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                Tidak ada berita populer ditemukan.
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* PANEL KANAN: WORKSPACE EDITOR */}
+        <section className="workspace-panel">
+          
+          {/* JIKA BELUM PILIH BERITA & TIDAK TULIS MANUAL */}
+          {!selectedNews && !isAddingCustom ? (
+            <div className="workspace-placeholder">
+              <div className="placeholder-icon">
+                <Sparkles size={32} />
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-title)', color: '#fff' }}>Mulai Duplikasi Berita Populer</h2>
+              <p style={{ maxWidth: '460px', fontSize: '0.9rem' }}>
+                Pilih berita terhangat hari ini dari panel kiri atau klik <strong>"Tulis Manual"</strong> di atas untuk memproses konten kustom Anda sendiri.
+              </p>
+            </div>
+          ) : (
+            
+            /* JIKA BERITA DIPILIH ATAU PILIH TULIS MANUAL */
+            <div className="editor-card">
+              
+              {/* HEADER EDITOR */}
+              <div className="editor-header">
+                <div className="editor-title-group">
+                  <h2>
+                    {isAddingCustom ? "Mode Penulisan Berita Manual" : "Detail Berita Asli"}
+                  </h2>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                    {isAddingCustom ? "Ketik judul dan isi berita sumber untuk diduplikasi" : (
+                      <>
+                        Sumber: <a href={selectedNews?.url} target="_blank" rel="noopener noreferrer" className="news-detail-source-link">{selectedNews?.source}</a> • {selectedNews?.time}
+                      </>
+                    )}
+                  </p>
+                </div>
+                
+                <div className="editor-actions">
+                  <button 
+                    className={`btn btn-primary ${isRewriting ? 'loading' : ''}`}
+                    onClick={handleRewrite}
+                    disabled={isRewriting}
+                  >
+                    <Sparkles size={16} /> 
+                    {isRewriting ? "Sedang Menulis Ulang..." : "Buatkan Duplikasi Beritanya"}
+                  </button>
+                </div>
+              </div>
+
+              {/* AREA BERITA SUMBER */}
+              {isAddingCustom ? (
+                <div className="editor-inputs" style={{ background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border-color)', padding: '1.25rem', borderRadius: '12px' }}>
+                  <div className="input-group">
+                    <label className="input-label">Kategori Berita</label>
+                    <select 
+                      className="text-input" 
+                      value={customCategory} 
+                      onChange={(e) => setCustomCategory(e.target.value)}
+                      style={{ background: 'var(--bg-tertiary)' }}
+                    >
+                      {categories.filter(c => c !== "Semua").map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Judul Berita Asli</label>
+                    <input 
+                      type="text" 
+                      placeholder="Masukkan judul berita populer..." 
+                      className="text-input"
+                      value={customTitle}
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Konten Berita Asli</label>
+                    <textarea 
+                      placeholder="Tempel atau ketik konten berita asli di sini..." 
+                      className="text-input textarea-input"
+                      style={{ minHeight: '120px' }}
+                      value={customContent}
+                      onChange={(e) => setCustomContent(e.target.value)}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="original-news-box">
+                  <h3 className="original-title">{selectedNews?.title}</h3>
+                  <div className="original-content">
+                    {selectedNews?.content.split('\n\n').map((para, i) => (
+                      <p key={i} style={{ marginBottom: '0.75rem' }}>{para}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AREA HASIL REWRITE & SEO OPTIMIZER */}
+              {(rewrittenTitle || isRewriting) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Sparkles size={20} style={{ color: '#10b981' }} />
+                    <h2 style={{ fontSize: '1.25rem', color: '#fff' }}>Hasil Penulisan Ulang & Optimasi SEO</h2>
+                  </div>
+
+                  {isRewriting ? (
+                    <div className="loading-overlay">
+                      <div className="spinner"></div>
+                      <p>Kecerdasan Buatan sedang memformulasikan berita unik & mengoptimalkan SEO...</p>
+                    </div>
+                  ) : (
+                    
+                    /* EDITOR HASIL DAN PANEL SEO SIDEBAR */
+                    <div className="workspace-grid">
+                      
+                      {/* SUB-PANEL KIRI: EDIT KONTEN HASIL */}
+                      <div className="editor-inputs">
+                        
+                        <div className="input-group">
+                          <label className="input-label">
+                            Judul Berita Teroptimasi SEO
+                            <span style={{ color: rewrittenTitle.length > 70 || rewrittenTitle.length < 40 ? '#f59e0b' : '#10b981' }}>
+                              {rewrittenTitle.length} Karakter
+                            </span>
+                          </label>
+                          <input 
+                            type="text" 
+                            className="text-input" 
+                            value={rewrittenTitle} 
+                            onChange={(e) => setRewrittenTitle(e.target.value)}
+                            style={{ fontWeight: '600' }}
+                          />
+                        </div>
+
+                        <div className="input-group">
+                          <label className="input-label">Slug URL (Ramah SEO)</label>
+                          <input 
+                            type="text" 
+                            className="text-input" 
+                            value={slug} 
+                            onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                          />
+                        </div>
+
+                        <div className="input-group">
+                          <label className="input-label">
+                            Meta Deskripsi
+                            <span style={{ color: metaDescription.length > 165 || metaDescription.length < 110 ? '#f59e0b' : '#10b981' }}>
+                              {metaDescription.length} / 160 Karakter
+                            </span>
+                          </label>
+                          <textarea 
+                            className="text-input" 
+                            style={{ minHeight: '60px', resize: 'none' }}
+                            value={metaDescription} 
+                            onChange={(e) => setMetaDescription(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="input-group">
+                          <label className="input-label">
+                            Isi Berita Baru (Gaya Radar Cikarang)
+                            <span>
+                              {rewrittenContent.split(/\s+/).filter(w => w.length > 0).length} Kata
+                            </span>
+                          </label>
+                          <textarea 
+                            className="text-input textarea-input" 
+                            value={rewrittenContent} 
+                            onChange={(e) => setRewrittenContent(e.target.value)}
+                          />
+                        </div>
+
+                      </div>
+
+                      {/* SUB-PANEL KANAN: ANALISIS SEO SCORE & TIPS */}
+                      <div className="seo-panel">
+                        
+                        <div className="score-circle-wrapper">
+                          <div className={`score-circle ${seoScore >= 80 ? 'success' : seoScore >= 50 ? 'warning' : 'danger'}`}>
+                            <span className="score-value">{seoScore}</span>
+                            <span className="score-label">Skor SEO</span>
+                          </div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: seoScore >= 80 ? '#10b981' : '#f59e0b' }}>
+                            {seoScore >= 80 ? "Sangat Baik (SEO-Ready)" : "Butuh Optimasi Tambahan"}
+                          </span>
+                        </div>
+
+                        {/* Input Focus Keywords */}
+                        <div className="input-group" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                          <label className="input-label">Kata Kunci Fokus (Tekan Enter)</label>
+                          <input 
+                            type="text" 
+                            placeholder="Tambah kata kunci..." 
+                            className="text-input"
+                            style={{ padding: '0.5rem', fontSize: '0.85rem' }}
+                            value={newKeywordInput}
+                            onChange={(e) => setNewKeywordInput(e.target.value)}
+                            onKeyDown={handleAddKeyword}
+                          />
+                          <div className="keywords-container" style={{ marginTop: '0.5rem' }}>
+                            {focusKeywords.map((keyword, index) => (
+                              <span key={index} className="keyword-chip">
+                                {keyword}
+                                <span 
+                                  style={{ cursor: 'pointer', marginLeft: '0.25rem', fontWeight: 'bold' }} 
+                                  onClick={() => handleRemoveKeyword(index)}
+                                >
+                                  ×
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Checklist Optimasi SEO */}
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+                          <h4 style={{ fontSize: '0.85rem', color: '#fff', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <FileText size={14} /> Checklist SEO
+                          </h4>
+                          <div className="seo-tips-list">
+                            {seoTips.map((tip, index) => (
+                              <div key={index} className={`seo-tip-item ${tip.status}`}>
+                                {tip.status === 'success' && <CheckCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />}
+                                {tip.status === 'warning' && <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />}
+                                {tip.status === 'danger' && <XCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />}
+                                <span>{tip.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Tombol Aksi Ekspor */}
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <button 
+                            className="btn btn-outline"
+                            style={{ justifyContent: 'center' }}
+                            onClick={() => handleCopy(
+                              `Judul: ${rewrittenTitle}\n\nSlug: ${slug}\nMeta Desc: ${metaDescription}\nKeywords: ${focusKeywords.join(', ')}\n\nKonten:\n${rewrittenContent}`,
+                              "Berita lengkap disalin ke clipboard!"
+                            )}
+                          >
+                            <Copy size={16} /> Salin Draf Berita
+                          </button>
+                          
+                          <button 
+                            className="btn btn-success"
+                            style={{ justifyContent: 'center' }}
+                            onClick={handlePublish}
+                          >
+                            <Send size={16} /> Publikasikan Berita
+                          </button>
+                        </div>
+
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* RIWAYAT PUBLIKASI (HISTORI) */}
+          {publishedArticles.length > 0 && (
+            <div className="editor-card" style={{ background: 'rgba(16, 185, 129, 0.03)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+              <h3 style={{ fontSize: '1.15rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CheckCircle size={20} style={{ color: '#10b981' }} />
+                Berita Terpublikasi di radarcikarang.com (Simulasi)
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                {publishedArticles.map(art => (
+                  <div 
+                    key={art.id}
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      background: 'rgba(0,0,0,0.2)', 
+                      padding: '0.75rem 1rem', 
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)' 
+                    }}
+                  >
+                    <div>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: '600' }}>{art.title}</h4>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                        URL: radarcikarang.com/{art.slug} • Kategori: {art.category} • Tanggal: {art.date}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span className="category-tag" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399' }}>
+                        SEO: {art.score}
+                      </span>
+                      <button 
+                        className="refresh-btn"
+                        onClick={() => handleCopy(`https://radarcikarang.com/${art.slug}`, "Link URL disalin!")}
+                        title="Salin Link URL"
+                      >
+                        <Copy size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </section>
+
+      </main>
+
+      {/* TOAST POPUP NOTIFICATION */}
+      {toastMessage && (
+        <div className="toast">
+          <CheckCircle size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+}
