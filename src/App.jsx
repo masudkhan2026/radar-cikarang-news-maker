@@ -426,7 +426,7 @@ export default function App() {
     showToast("Berita berhasil dipublikasi ke radarcikarang.com!");
   };
 
-  // Fungsi menghasilkan ilustrasi gambar 16:9 berdasarkan judul
+  // Fungsi menghasilkan ilustrasi gambar 16:9 berdasarkan judul menggunakan AI
   const handleGenerateIllustration = async () => {
     if (!rewrittenTitle) {
       showToast("Judul hasil duplikasi harus ada terlebih dahulu!");
@@ -434,27 +434,39 @@ export default function App() {
     }
     
     setIsGeneratingIllustration(true);
-    // Ekstrak keyword pencarian gambar dari judul
-    const topic = rewrittenTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .split(/\s+/)
-      .filter(w => w.length > 3 && w !== "yang" && w !== "untuk" && w !== "dengan" && w !== "dalam" && w !== "dari" && w !== "oleh")
-      .slice(0, 2)
-      .join(',');
-
+    
     try {
-      // Gunakan Lorem Flickr dengan parameter pencarian dinamis & lock ID agar selalu berbeda
-      const randomSeed = Math.floor(Math.random() * 10000);
-      const imageUrl = `https://loremflickr.com/800/450/${encodeURIComponent(topic || 'news')}?lock=${randomSeed}`;
+      // Prompt instruksi AI sesuai permintaan user
+      const aiPrompt = `buatkan gambar ilustrasi rasio 16:9 dari judul berita: ${rewrittenTitle}`;
       
-      // Berikan efek delay animasi pembuatan
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Gunakan Pollinations AI Generator gratis yang sangat bertenaga
+      // Tambahkan random seed agar gambar selalu unik setiap kali digenerate
+      const seed = Math.floor(Math.random() * 1000000);
+      const imageUrl = `https://image.pollinations.ai/p/${encodeURIComponent(aiPrompt)}?width=800&height=450&nologo=true&seed=${seed}`;
+      
+      // Cek apakah gambar dapat diakses (pre-load)
+      const img = new window.Image();
+      img.src = imageUrl;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Gagal memuat gambar dari server AI"));
+      });
+      
       setIllustrationUrl(imageUrl);
-      showToast("Ilustrasi berita berhasil dibuat!");
+      showToast("Ilustrasi berita AI berhasil dibuat!");
     } catch (error) {
       console.error(error);
-      showToast("Gagal membuat ilustrasi berita.");
+      showToast("Gagal memuat ilustrasi AI. Menggunakan fallback...");
+      
+      // Fallback ke Lorem Flickr jika Pollinations sedang down/limit
+      const topic = rewrittenTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '')
+        .split(/\s+/)
+        .slice(0, 2)
+        .join(',');
+      const seed = Math.floor(Math.random() * 10000);
+      setIllustrationUrl(`https://loremflickr.com/800/450/${encodeURIComponent(topic || 'news')}?lock=${seed}`);
     } finally {
       setIsGeneratingIllustration(false);
     }
