@@ -922,24 +922,16 @@ export default function App() {
                         </div>
 
                         {/* Tombol Aksi Ekspor */}
-                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
                           <button 
-                            className="btn btn-outline"
-                            style={{ justifyContent: 'center' }}
+                            className="btn btn-primary"
+                            style={{ justifyContent: 'center', width: '100%' }}
                             onClick={() => handleCopy(
                               `Judul: ${rewrittenTitle}\n\nSlug: ${slug}\nMeta Desc: ${metaDescription}\nKeywords: ${focusKeywords.join(', ')}\n\nKonten:\n${rewrittenContent}`,
-                              "Berita lengkap disalin ke clipboard!"
+                              "Seluruh data berita disalin!"
                             )}
                           >
-                            <Copy size={16} /> Salin Draf Berita
-                          </button>
-                          
-                          <button 
-                            className="btn btn-success"
-                            style={{ justifyContent: 'center' }}
-                            onClick={handlePublish}
-                          >
-                            <Send size={16} /> Publikasikan Berita
+                            <Copy size={16} /> Salin Semua Draf Berita
                           </button>
                         </div>
 
