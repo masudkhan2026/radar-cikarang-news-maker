@@ -97,12 +97,100 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [apiKey, setApiKey] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false);
 
   // Efek Theme (Light / Dark Mode)
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Fetch berita aktual dari Google News / Antara News RSS via JSON proxy
+  const fetchLiveNews = async (categoryName) => {
+    setIsLoadingFeed(true);
+    let rssUrl = "https://news.google.com/rss?hl=id&gl=ID&ceid=ID:id";
+    
+    if (categoryName === "Cikarang") {
+      rssUrl = "https://news.google.com/rss/search?q=Cikarang&hl=id&gl=ID&ceid=ID:id";
+    } else if (categoryName === "Bekasi") {
+      rssUrl = "https://news.google.com/rss/search?q=Bekasi&hl=id&gl=ID&ceid=ID:id";
+    } else if (categoryName === "Nasional") {
+      rssUrl = "https://www.antaranews.com/rss/terkini.xml";
+    } else if (categoryName === "Bisnis") {
+      rssUrl = "https://www.antaranews.com/rss/ekonomi.xml";
+    } else if (categoryName === "Teknologi") {
+      rssUrl = "https://news.google.com/rss/search?q=Teknologi&hl=id&gl=ID&ceid=ID:id";
+    } else if (categoryName === "Ekonomi") {
+      rssUrl = "https://www.antaranews.com/rss/ekonomi.xml";
+    } else if (categoryName === "Hiburan") {
+      rssUrl = "https://www.antaranews.com/rss/hiburan.xml";
+    }
+
+    try {
+      const response = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+      if (!response.ok) throw new Error("Failed to fetch RSS");
+      const data = await response.json();
+      
+      if (data.status === "ok" && data.items && data.items.length > 0) {
+        const formattedItems = data.items.slice(0, 10).map((item, index) => {
+          let title = item.title;
+          let sourceName = "Sumber Media";
+          const titleParts = title.split(" - ");
+          if (titleParts.length > 1) {
+            sourceName = titleParts.pop();
+            title = titleParts.join(" - ");
+          }
+
+          // Bersihkan deskripsi HTML
+          const cleanDesc = item.description 
+            ? item.description.replace(/<[^>]*>/g, '').trim() 
+            : "";
+
+          return {
+            id: `live-${categoryName}-${index}-${Date.now()}`,
+            title: title,
+            category: categoryName === "Semua" ? "Nasional" : categoryName,
+            source: sourceName,
+            url: item.link,
+            time: formatTimeAgo(item.pubDate),
+            content: cleanDesc.length > 50 
+              ? cleanDesc 
+              : `${title}. Baca ulasan dan informasi lengkapnya langsung melalui portal berita resmi ${sourceName}.`
+          };
+        });
+        setPopularNews(formattedItems);
+      } else {
+        throw new Error("No items found");
+      }
+    } catch (error) {
+      console.warn("Gagal memuat berita aktual, menggunakan berita cadangan:", error);
+      // Fallback ke data mock lokal
+      const fallback = INITIAL_POPULAR_NEWS.filter(news => 
+        categoryName === "Semua" || news.category === categoryName
+      );
+      setPopularNews(fallback.length > 0 ? fallback : INITIAL_POPULAR_NEWS);
+    } finally {
+      setIsLoadingFeed(false);
+    }
+  };
+
+  const formatTimeAgo = (dateStr) => {
+    try {
+      const pubDate = new Date(dateStr);
+      const diffMs = Date.now() - pubDate.getTime();
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours < 1) return "Baru saja";
+      if (diffHours < 24) return `${diffHours} jam yang lalu`;
+      return `${Math.floor(diffHours / 24)} hari yang lalu`;
+    } catch {
+      return "Hari ini";
+    }
+  };
+
+  // Efek memuat berita live saat kategori berganti
+  useEffect(() => {
+    fetchLiveNews(activeCategory);
+  }, [activeCategory]);
   
   // Custom Input Form (jika user ingin menulis sendiri)
   const [isAddingCustom, setIsAddingCustom] = useState(false);
@@ -353,35 +441,44 @@ export default function App() {
 
           {/* Feed List */}
           <div className="news-feed-list">
-            {filteredNews.map(news => (
-              <div 
-                key={news.id} 
-                className={`news-card ${selectedNews?.id === news.id ? 'active' : ''}`}
-                onClick={() => handleSelectNews(news)}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span className="category-tag">{news.category}</span>
-                  <a 
-                    href={news.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="news-card-source-link"
-                    onClick={(e) => e.stopPropagation()}
+            {isLoadingFeed ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', gap: '0.75rem', color: 'var(--text-secondary)' }}>
+                <div className="spinner" style={{ width: '32px', height: '32px' }}></div>
+                <span style={{ fontSize: '0.85rem' }}>Mengambil berita populer hari ini...</span>
+              </div>
+            ) : (
+              <>
+                {filteredNews.map(news => (
+                  <div 
+                    key={news.id} 
+                    className={`news-card ${selectedNews?.id === news.id ? 'active' : ''}`}
+                    onClick={() => handleSelectNews(news)}
                   >
-                    {news.source}
-                  </a>
-                </div>
-                <h3 className="news-card-title">{news.title}</h3>
-                <div className="news-card-footer">
-                  <span>{news.time}</span>
-                  <ChevronRight size={14} />
-                </div>
-              </div>
-            ))}
-            {filteredNews.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                Tidak ada berita populer ditemukan.
-              </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="category-tag">{news.category}</span>
+                      <a 
+                        href={news.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="news-card-source-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {news.source}
+                      </a>
+                    </div>
+                    <h3 className="news-card-title">{news.title}</h3>
+                    <div className="news-card-footer">
+                      <span>{news.time}</span>
+                      <ChevronRight size={14} />
+                    </div>
+                  </div>
+                ))}
+                {filteredNews.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                    Tidak ada berita populer ditemukan.
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>
