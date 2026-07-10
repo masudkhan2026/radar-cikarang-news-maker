@@ -18,7 +18,8 @@ import {
   HelpCircle,
   FileText,
   Sun,
-  Moon
+  Moon,
+  Save
 } from 'lucide-react';
 import { rewriteNews, calculateSeoScore } from './aiRewriter';
 
@@ -95,7 +96,7 @@ export default function App() {
   const [selectedNews, setSelectedNews] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || "");
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
   const [isScrapingContent, setIsScrapingContent] = useState(false);
@@ -453,6 +454,26 @@ export default function App() {
               onChange={(e) => setApiKey(e.target.value)}
             />
           </div>
+          
+          <button 
+            className="btn btn-primary"
+            style={{ 
+              padding: '0.45rem 0.75rem', 
+              fontSize: '0.8rem', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.35rem',
+              height: '38px',
+              borderRadius: '8px'
+            }}
+            onClick={() => {
+              localStorage.setItem('gemini_api_key', apiKey);
+              showToast("Gemini API Key berhasil disimpan!");
+            }}
+            title="Simpan API Key di browser"
+          >
+            <Save size={14} /> Simpan
+          </button>
           
           <button 
             className="theme-toggle-btn"
