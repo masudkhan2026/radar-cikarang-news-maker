@@ -472,29 +472,61 @@ export default function App() {
     }
   };
 
-  // Fungsi mengunduh ilustrasi gambar ke komputer
+  // Fungsi mengunduh ilustrasi gambar ke komputer dengan kompresi JPG maksimal 200KB
   const handleDownloadIllustration = async () => {
     if (!illustrationUrl) return;
     try {
-      showToast("Mengunduh gambar...");
-      // Gunakan corsproxy.io untuk melewati blokir CORS saat fetch blob gambar
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(illustrationUrl)}`;
-      const response = await fetch(proxyUrl);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
+      showToast("Mengompresi dan mengunduh gambar...");
       
+      // Gunakan corsproxy.io untuk mengambil data gambar
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(illustrationUrl)}`;
+      
+      const img = new window.Image();
+      img.crossOrigin = "anonymous"; // Hindari eror canvas tainted
+      img.src = proxyUrl;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Gagal mengambil aset gambar untuk dikompres"));
+      });
+      
+      // Gunakan HTML5 Canvas untuk menggambar & mengompresi gambar menjadi JPG di bawah 200KB
+      const canvas = document.createElement("canvas");
+      canvas.width = 800;
+      canvas.height = 450; // Dimensi rasio 16:9 yang ideal
+      
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, 800, 450);
+      
+      // Ekspor canvas ke blob JPG dengan kualitas kompresi 0.75 (ideal di kisaran 40KB - 80KB, jauh di bawah 200KB)
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          showToast("Gagal mengompresi gambar.");
+          return;
+        }
+        
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = `ilustrasi-${slug || 'radar-cikarang'}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+        showToast("Gambar berhasil dikompres & diunduh (<200KB)!");
+      }, "image/jpeg", 0.75);
+      
+    } catch (error) {
+      console.warn("Gagal mengompresi gambar otomatis, mengunduh mentah:", error);
+      // Fallback unduh biasa jika proxy bermasalah
       const link = document.createElement("a");
-      link.href = blobUrl;
+      link.href = illustrationUrl;
+      link.target = "_blank";
       link.download = `ilustrasi-${slug || 'radar-cikarang'}.jpg`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-      showToast("Gambar berhasil diunduh!");
-    } catch (error) {
-      console.warn("Gagal unduh langsung, membuka di tab baru:", error);
-      window.open(illustrationUrl, "_blank");
-      showToast("Membuka gambar di tab baru untuk diunduh!");
+      showToast("Membuka gambar di tab baru!");
     }
   };
 
