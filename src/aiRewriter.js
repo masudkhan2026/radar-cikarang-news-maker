@@ -69,13 +69,26 @@ function ruleBasedRephrase(text, localTarget = "Cikarang") {
  * @param {string} apiKey (Opsional) API Key Gemini untuk rewrite sesungguhnya
  * @returns {Promise<object>} Objek berita teroptimasi SEO
  */
+// Bersihkan judul untuk mengambil topik utama berita
+function getCleanTopic(title) {
+  let clean = title;
+  
+  // Hapus portal berita di bagian belakang (contoh: " - Kompas.com" atau " - Detik Finance")
+  clean = clean.replace(/\s*[-|•]\s*[A-Za-z0-9.]+(?:\s+[A-Za-z0-9.]+)*$/i, "");
+  
+  // Hapus prefix template lokal jika ada
+  clean = clean.replace(/^(?:Terbaru|Info Terkini|Sorotan|Terpopuler|Terhangat|Kabar Terbaru|Terbaru: |Info Terkini: |Sorotan: )\s*:\s*/i, "");
+  
+  return clean.trim();
+}
+
 /**
  * Melakukan penulisan ulang berita & optimasi SEO
  * @param {string} title Judul asli berita
  * @param {string} content Konten asli berita
  * @param {string} category Kategori berita
  * @param {string} apiKey (Opsional) API Key Gemini untuk rewrite sesungguhnya
- * @param {string} source Nama sumber berita asli (misal: Republika, Detik Finance)
+ * @param {string} source Nama sumber berita asli
  * @returns {Promise<object>} Objek berita teroptimasi SEO
  */
 export async function rewriteNews(title, content, category = "Nasional", apiKey = "", source = "Radar Cikarang") {
@@ -175,8 +188,11 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
   }
 
   // FALLBACK: Generator Penulisan Ulang Lokal (Smart Rule-based)
+  // Bersihkan judul untuk mengambil topik berita
+  const topic = getCleanTopic(title);
+
   // Membuat Judul Baru berbasis Template (kurang dari 70 karakter)
-  let rawTitle = title;
+  let rawTitle = getCleanTopic(title);
   if (rawTitle.length > 50) {
     rawTitle = rawTitle.substring(0, 47) + "...";
   }
@@ -194,13 +210,14 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
   // Rewrite konten asli secara rule-based
   let baseContent = ruleBasedRephrase(content);
 
-  // Perluas konten agar berukuran 300 - 600 kata dengan menyisipkan detail lokal Cikarang/Bekasi
+  // Perluas konten secara dinamis menggunakan topik agar isi berita selaras dan nyambung
   const paddingParagraphs = [
-    "Sebagai wilayah administrasi yang menaungi kawasan industri terbesar di Asia Tenggara, Kabupaten Bekasi dan khususnya area Cikarang terus memantau dinamika perkembangan nasional ini secara berkala. Pemerintah daerah setempat bersama jajaran dinas terkait berkomitmen untuk menindaklanjuti serta mengintegrasikan setiap kebijakan pusat agar dapat diaplikasikan secara optimal di tingkat lokal demi mendukung kenyamanan iklim investasi, kelancaran distribusi logistik, dan produktivitas masyarakat di kawasan industri.",
-    "Para pelaku usaha dan komunitas lokal di Cikarang menyambut baik perkembangan berita ini dengan antusiasme tinggi, namun tetap dibarengi dengan sikap waspada terhadap potensi tantangan administratif maupun penyesuaian regulasi baru ke depan. Diharapkan koordinasi lintas sektor antara jajaran pemerintah daerah, pihak pengelola kawasan industri, akademisi, dan perwakilan warga dapat terus terjalin erat untuk merumuskan kebijakan turunan yang seimbang dan bermanfaat jangka panjang.",
+    `Perkembangan informasi mengenai ${topic} saat ini tengah menjadi sorotan tajam publik, khususnya bagi warga di kawasan Cikarang, Bekasi, dan sekitarnya. Kejadian ini memicu diskusi hangat di tengah masyarakat yang menilai bahwa aspek ketertiban dan kepatuhan terhadap aturan yang berlaku harus selalu dikedepankan demi kenyamanan bersama.`,
+    `Menyikapi maraknya tanggapan seputar ${topic}, beberapa tokoh masyarakat setempat mengimbau agar semua pihak tetap tenang dan menyikapi informasi ini secara bijak. Diperlukan adanya klarifikasi resmi lebih lanjut dari pihak-pihak terkait agar tidak timbul kesalahpahaman atau disinformasi yang meluas di jejaring sosial.`,
     category === "Bisnis" || category === "Ekonomi" 
-      ? "Perubahan iklim ekonomi makro dan fluktuasi pasar finansial ini tentu memberikan pengaruh langsung terhadap neraca keuangan dan strategi operasional perusahaan-perusahaan manufaktur di kawasan industri Jababeka, MM2100, EJIP, maupun Delta Silicon Cikarang. Jajaran manajemen perusahaan diimbau untuk segera menyusun rencana kontinjensi jangka pendek guna memitigasi dampak risiko operasional, sekaligus menjaga stabilitas serapan tenaga kerja lokal yang menjadi roda penggerak ekonomi utama daerah Bekasi."
-      : "Langkah-langkah strategis di tingkat regional juga disiapkan untuk mensinergikan program kerja lokal dengan target pencapaian pembangunan nasional secara berkelanjutan. Hal ini mencakup peningkatan kapasitas sumber daya manusia lokal melalui berbagai pelatihan vokasi terarah di Balai Latihan Kerja (BLK), penyediaan akses permodalan bagi usaha mikro, serta efisiensi regulasi perizinan usaha guna memperkuat daya saing wilayah Cikarang."
+      ? `Terkait kasus ${topic} ini, pengaruhnya diperkirakan akan memberikan dampak langsung terhadap operasional usaha di sekitar Cikarang. Jajaran pengurus kawasan industri bersama asosiasi terkait dihimbau untuk menyusun rencana langkah antisipasi operasional agar tidak mengganggu roda ekonomi lokal.`
+      : `Bagi wilayah Cikarang yang merupakan salah satu sentra aktivitas penting di Bekasi, peristiwa ${topic} ini menjadi pengingat penting akan pentingnya pengawasan dan edukasi publik yang berkesinambungan. Penerapan disiplin dan kesadaran individu dinilai menjadi fondasi utama dalam menjaga situasi lingkungan sosial yang tertib dan kondusif.`,
+    `Hingga saat ini, perkembangan kasus ${topic} masih terus dipantau secara berkala oleh publik. Diharapkan solusi konkret dapat segera dirumuskan oleh pihak berwenang guna memberikan kejelasan serta rasa aman bagi seluruh lapisan masyarakat di Kabupaten Bekasi.`
   ];
 
   rewrittenContent = baseContent + "\n\n" + paddingParagraphs.join("\n\n") + `\n\nSumber: ${source}`;
