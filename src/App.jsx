@@ -98,6 +98,7 @@ export default function App() {
   const [apiKey, setApiKey] = useState("");
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
+  const [isScrapingContent, setIsScrapingContent] = useState(false);
 
   // Efek Theme (Light / Dark Mode)
   useEffect(() => {
@@ -187,6 +188,85 @@ export default function App() {
     }
   };
 
+  // Mengikis artikel lengkap dari link berita asli
+  const scrapeFullContent = async (url) => {
+    if (!url) return null;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    
+    try {
+      const response = await fetch(proxyUrl);
+      if (!response.ok) throw new Error("Network response not ok");
+      const htmlText = await response.text();
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, "text/html");
+      
+      // Selector artikel di portal-portal berita utama Indonesia
+      const selectors = [
+        '.detail__body-text', // Detik
+        '#detikdetailtext',   // Detik Alt
+        '.read__content',     // Kompas
+        '.detail_text',       // CNBC Indonesia
+        '.artikel-content',   // Republika
+        '.entry-content',     // Umum
+        '.post-content',      // Umum
+        'article'             // Tag HTML5
+      ];
+      
+      let articleText = "";
+      
+      for (const selector of selectors) {
+        const element = doc.querySelector(selector);
+        if (element) {
+          const paragraphs = element.querySelectorAll('p');
+          if (paragraphs.length > 0) {
+            const pTexts = Array.from(paragraphs)
+              .map(p => p.textContent.trim())
+              .filter(txt => txt.length > 30 && !txt.toLowerCase().includes("baca juga") && !txt.toLowerCase().includes("simak juga") && !txt.toLowerCase().includes("tonton video"));
+            
+            if (pTexts.length > 0) {
+              articleText = pTexts.join('\n\n');
+              break;
+            }
+          }
+          
+          const rawText = element.textContent.trim();
+          if (rawText.length > 200) {
+            articleText = rawText;
+            break;
+          }
+        }
+      }
+      
+      if (!articleText || articleText.length < 200) {
+        const allParagraphs = doc.querySelectorAll('p');
+        const pTexts = Array.from(allParagraphs)
+          .map(p => p.textContent.trim())
+          .filter(txt => txt.length > 40 && 
+                          !txt.toLowerCase().includes("copyright") && 
+                          !txt.toLowerCase().includes("baca juga") && 
+                          !txt.toLowerCase().includes("simak juga") &&
+                          !txt.toLowerCase().includes("cookie"));
+        
+        if (pTexts.length > 0) {
+          articleText = pTexts.join('\n\n');
+        }
+      }
+      
+      articleText = articleText
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/\s+/g, ' ')
+        .replace(/\n /g, '\n')
+        .trim();
+        
+      return articleText.length > 100 ? articleText : null;
+      
+    } catch (error) {
+      console.warn("Gagal mengekstrak isi asli berita:", error);
+      return null;
+    }
+  };
+
   // Efek memuat berita live saat kategori berganti
   useEffect(() => {
     fetchLiveNews(activeCategory);
@@ -233,9 +313,10 @@ export default function App() {
   };
 
   // Handler Pilih Berita
-  const handleSelectNews = (news) => {
+  const handleSelectNews = async (news) => {
     setSelectedNews(news);
     setIsAddingCustom(false);
+    
     // Reset state editor
     setRewrittenTitle("");
     setRewrittenContent("");
@@ -243,6 +324,26 @@ export default function App() {
     setSlug("");
     setFocusKeywords([]);
     setSeoScore(0);
+
+    // Ambil isi artikel utuh secara real-time dari link asli
+    if (news.url && (news.id.startsWith('live-') || news.content.includes("Baca ulasan dan informasi lengkapnya"))) {
+      setIsScrapingContent(true);
+      const fullText = await scrapeFullContent(news.url);
+      if (fullText) {
+        setSelectedNews(prev => ({
+          ...prev,
+          content: fullText
+        }));
+        
+        // Cache konten utuh di popularNews agar tidak scrape ulang jika diklik lagi
+        setPopularNews(prevList => 
+          prevList.map(item => 
+            item.id === news.id ? { ...item, content: fullText } : item
+          )
+        );
+      }
+      setIsScrapingContent(false);
+    }
   };
 
   // Handler memicu Rewrite AI
@@ -567,9 +668,30 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <div className="original-news-box">
+                <div className="original-news-box" style={{ position: 'relative' }}>
+                  {isScrapingContent && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      background: 'rgba(15, 23, 42, 0.85)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.75rem',
+                      zIndex: 10,
+                      borderRadius: '8px',
+                      color: '#38bdf8'
+                    }}>
+                      <div className="spinner" style={{ width: '28px', height: '28px' }}></div>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>Mengambil isi berita lengkap dari {selectedNews?.source}...</span>
+                    </div>
+                  )}
                   <h3 className="original-title">{selectedNews?.title}</h3>
-                  <div className="original-content">
+                  <div className="original-content" style={{ opacity: isScrapingContent ? 0.3 : 1, transition: 'opacity 0.2s ease' }}>
                     {selectedNews?.content.split('\n\n').map((para, i) => (
                       <p key={i} style={{ marginBottom: '0.75rem' }}>{para}</p>
                     ))}
