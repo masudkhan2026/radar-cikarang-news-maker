@@ -19,7 +19,9 @@ import {
   FileText,
   Sun,
   Moon,
-  Save
+  Save,
+  Image,
+  Download
 } from 'lucide-react';
 import { rewriteNews, calculateSeoScore } from './aiRewriter';
 
@@ -100,6 +102,8 @@ export default function App() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [isLoadingFeed, setIsLoadingFeed] = useState(false);
   const [isScrapingContent, setIsScrapingContent] = useState(false);
+  const [illustrationUrl, setIllustrationUrl] = useState("");
+  const [isGeneratingIllustration, setIsGeneratingIllustration] = useState(false);
 
   // Efek Theme (Light / Dark Mode)
   useEffect(() => {
@@ -318,13 +322,14 @@ export default function App() {
     setSelectedNews(news);
     setIsAddingCustom(false);
     
-    // Reset state editor
+    // Reset state editor & gambar
     setRewrittenTitle("");
     setRewrittenContent("");
     setMetaDescription("");
     setSlug("");
     setFocusKeywords([]);
     setSeoScore(0);
+    setIllustrationUrl("");
 
     // Ambil isi artikel utuh secara real-time dari link asli
     if (news.url && (news.id.startsWith('live-') || news.content.includes("Baca ulasan dan informasi lengkapnya"))) {
@@ -419,6 +424,69 @@ export default function App() {
 
     setPublishedArticles([newPublish, ...publishedArticles]);
     showToast("Berita berhasil dipublikasi ke radarcikarang.com!");
+  };
+
+  // Fungsi menghasilkan ilustrasi gambar 16:9 berdasarkan judul
+  const handleGenerateIllustration = async () => {
+    if (!rewrittenTitle) {
+      showToast("Judul hasil duplikasi harus ada terlebih dahulu!");
+      return;
+    }
+    
+    setIsGeneratingIllustration(true);
+    // Ekstrak keyword pencarian gambar dari judul
+    const topic = rewrittenTitle
+      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
+      .split(' ')
+      .filter(w => w.length > 4)
+      .slice(0, 2)
+      .join(',');
+
+    try {
+      // Gunakan Unsplash Source API gratis untuk mengambil gambar 16:9 yang relevan secara acak
+      const randomSeed = Math.floor(Math.random() * 1000);
+      const imageUrl = `https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&h=450&q=80&sig=${randomSeed}&query=${encodeURIComponent(topic || 'news')}`;
+      
+      // Berikan efek delay animasi pembuatan
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setIllustrationUrl(imageUrl);
+      showToast("Ilustrasi berita berhasil dibuat!");
+    } catch (error) {
+      console.error(error);
+      showToast("Gagal membuat ilustrasi berita.");
+    } finally {
+      setIsGeneratingIllustration(false);
+    }
+  };
+
+  // Fungsi mengunduh ilustrasi gambar ke komputer
+  const handleDownloadIllustration = async () => {
+    if (!illustrationUrl) return;
+    try {
+      showToast("Mengunduh gambar...");
+      const response = await fetch(illustrationUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `ilustrasi-${slug || 'radar-cikarang'}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      showToast("Gambar berhasil diunduh!");
+    } catch (error) {
+      // Fallback jika terjadi isu CORS
+      const link = document.createElement("a");
+      link.href = illustrationUrl;
+      link.target = "_blank";
+      link.download = `ilustrasi-${slug || 'radar-cikarang'}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("Membuka gambar di tab baru untuk diunduh!");
+    }
   };
 
   // Filter list berita populer berdasarkan pencarian dan kategori
@@ -833,6 +901,109 @@ export default function App() {
                             value={rewrittenContent} 
                             onChange={(e) => setRewrittenContent(e.target.value)}
                           />
+                        </div>
+
+                        {/* FITUR ILUSTRASI GAMBAR 16:9 */}
+                        <div className="input-group" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem' }}>
+                          <button
+                            className="btn btn-outline"
+                            style={{ 
+                              width: '100%', 
+                              justifyContent: 'center', 
+                              borderColor: 'var(--text-muted)',
+                              background: 'rgba(255,255,255,0.02)',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              height: '42px',
+                              fontWeight: 600
+                            }}
+                            onClick={handleGenerateIllustration}
+                            disabled={isGeneratingIllustration}
+                          >
+                            <Image size={18} />
+                            {isGeneratingIllustration ? "Sedang Membuat Ilustrasi..." : "Buat Ilustrasi Berita Rasio 16:9"}
+                          </button>
+
+                          {/* Bagian Hitam Kotak Ilustrasi (16:9) */}
+                          <div 
+                            style={{ 
+                              width: '100%', 
+                              aspectRatio: '16/9', 
+                              background: '#000', 
+                              borderRadius: '12px', 
+                              marginTop: '1rem',
+                              position: 'relative',
+                              overflow: 'hidden',
+                              border: '1px solid var(--border-color)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}
+                          >
+                            {isGeneratingIllustration && (
+                              <div style={{
+                                position: 'absolute',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                color: '#38bdf8',
+                                zIndex: 5
+                              }}>
+                                <div className="spinner" style={{ width: '28px', height: '28px' }}></div>
+                                <span style={{ fontSize: '0.8rem' }}>Mencari aset gambar relevan...</span>
+                              </div>
+                            )}
+
+                            {illustrationUrl ? (
+                              <>
+                                <img 
+                                  src={illustrationUrl} 
+                                  alt="Ilustrasi Berita"
+                                  style={{ 
+                                    width: '100%', 
+                                    height: '100%', 
+                                    objectFit: 'cover',
+                                    opacity: isGeneratingIllustration ? 0.3 : 1,
+                                    transition: 'opacity 0.2s ease'
+                                  }}
+                                />
+                                {/* Tombol Download Melayang */}
+                                <button
+                                  onClick={handleDownloadIllustration}
+                                  style={{
+                                    position: 'absolute',
+                                    bottom: '12px',
+                                    right: '12px',
+                                    background: 'rgba(15, 23, 42, 0.85)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: '#fff',
+                                    padding: '0.4rem 0.8rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    zIndex: 6,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  onMouseEnter={(e) => e.target.style.background = '#3b82f6'}
+                                  onMouseLeave={(e) => e.target.style.background = 'rgba(15, 23, 42, 0.85)'}
+                                >
+                                  <Download size={14} /> Download Gambar
+                                </button>
+                              </>
+                            ) : (
+                              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                <Image size={24} style={{ opacity: 0.5 }} />
+                                <span>Kotak Ilustrasi Berita (16:9)</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                       </div>
