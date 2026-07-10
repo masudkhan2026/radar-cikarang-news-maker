@@ -857,7 +857,18 @@ export default function App() {
 
                         {/* Input Focus Keywords */}
                         <div className="input-group" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                          <label className="input-label">Kata Kunci Fokus (Tekan Enter)</label>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <label className="input-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              Kata Kunci Fokus (Tekan Enter)
+                              <button 
+                                className="copy-small-btn"
+                                onClick={() => handleCopy(focusKeywords.join(', '), "Kata kunci disalin!")}
+                                title="Salin Kata Kunci"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </label>
+                          </div>
                           <input 
                             type="text" 
                             placeholder="Tambah kata kunci..." 
