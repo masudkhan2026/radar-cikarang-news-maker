@@ -126,21 +126,22 @@ export async function rewriteNews(title, content, category = "Nasional", apiKey 
         body: JSON.stringify({
           contents: [{
             parts: [{
-              text: `Anda adalah editor berita profesional dan pakar SEO untuk portal berita lokal radarcikarang.com. 
-Hari ini adalah tanggal ${currentDate}. Tulis ulang berita berikut agar unik, bebas plagiarisme, menarik dibaca, dan dioptimalkan secara SEO. 
+              text: `Anda adalah Jurnalis Senior Media Nasional dan pakar SEO berpengalaman yang bertindak sebagai Redaktur Senior radarcikarang.com. 
+Hari ini adalah tanggal ${currentDate}. Tulis ulang berita berikut agar unik, mendalam, bernilai berita tinggi (newsworthy), bebas plagiarisme, dan dioptimalkan secara SEO. 
 
-Aturan penulisan wajib:
-1. Berikan judul berita baru yang menarik perhatian (click-worthy). Panjang judul HARUS kurang dari 70 karakter (huruf/spasi, bukan kata).
-2. Tulis ulang konten berita secara mendalam agar memiliki panjang antara 300 sampai 600 kata. Anda harus memperluas pembahasan berita dengan menambahkan detail latar belakang, implikasi bagi publik, atau sudut pandang lokal yang relevan untuk mencapai panjang tersebut (jangan diisi pengulangan kalimat kosong). Asumsikan kejadian berita berlangsung baru-baru ini atau pada tahun berjalan (${currentYear}). Jangan menggunakan tahun lampau seperti 2023 atau 2024 dalam badan berita kecuali jika merujuk pada sejarah masa lalu.
-3. Selipkan 1-2 kalimat lokal yang relevan dengan pembaca di Cikarang/Bekasi atau dunia industri (karena Cikarang adalah kawasan industri terbesar di Asia Tenggara) di dalam tubuh artikel.
-4. Di bagian paling akhir isi berita (paragraf terakhir), Anda WAJIB menambahkan baris sumber dengan format: "Sumber: ${source}" (tanpa tanda kutip). Contoh: "Sumber: ${source}".
-5. Tentukan 1 Meta Description yang menarik (panjang antara 120-160 karakter).
-6. Buat slug URL yang ramah SEO (hanya huruf kecil, angka, dan tanda hubung).
+Aturan penulisan wajib (Gaya Jurnalisme Senior):
+1. Tulis berita dengan struktur Piramida Terbalik (Inverted Pyramid) yang diawali dengan Dateline khas (contoh: "JAKARTA - " atau "BEKASI - ") dan lead paragraf (5W+1H) yang kuat dan menarik perhatian.
+2. Panjang konten berita harus berkisar antara 300 sampai 600 kata. Anda wajib mengelaborasi tulisan secara mendalam dengan menambahkan detail kronologi, latar belakang konteks, implikasi sosial/ekonomi bagi publik, serta selipkan kutipan langsung (quotes) atau pernyataan dari tokoh/otoritas yang relevan secara realistis (misal: pernyataan Humas KCI, Kepolisian, atau pengamat).
+3. Berikan judul berita baru yang menarik, lugas, dan bernilai berita tinggi (click-worthy namun tidak clickbait murahan). Panjang judul HARUS kurang dari 70 karakter (huruf/spasi).
+4. Selipkan 1-2 kalimat lokal yang relevan dengan pembaca di Cikarang/Bekasi atau dunia industri (karena Cikarang adalah kawasan industri terbesar di Asia Tenggara) di dalam tubuh artikel.
+5. Di bagian paling akhir isi berita (paragraf terakhir), Anda WAJIB menambahkan baris sumber dengan format: "Sumber: ${source}" (tanpa tanda kutip). Contoh: "Sumber: ${source}".
+6. Tentukan 1 Meta Description yang memikat (panjang antara 120-160 karakter).
+7. Buat slug URL yang ramah SEO (hanya huruf kecil, angka, dan tanda hubung).
 
 Format output harus dalam bentuk JSON valid dengan kunci berikut:
 {
   "title": "judul baru di sini (kurang dari 70 karakter)",
-  "content": "konten berita lengkap hasil rewrite di sini (300-600 kata, diakhiri baris sumber. gunakan pemisah paragraf berupa \\n\\n)",
+  "content": "konten berita lengkap hasil rewrite di sini (300-600 kata, diawali dateline lokasi, diakhiri baris sumber. gunakan pemisah paragraf berupa \\n\\n)",
   "metaDescription": "meta deskripsi di sini",
   "slug": "slug-url-di-sini"
 }
@@ -187,7 +188,7 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
     }
   }
 
-  // FALLBACK: Generator Penulisan Ulang Lokal (Smart Rule-based)
+  // FALLBACK: Generator Penulisan Ulang Lokal (Smart Rule-based - Gaya Jurnalis Senior)
   // Bersihkan judul untuk mengambil topik berita
   const topic = getCleanTopic(title);
 
@@ -197,10 +198,10 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
     rawTitle = rawTitle.substring(0, 47) + "...";
   }
   const titleTemplates = [
-    `Terbaru: ${rawTitle}`,
-    `Info Terkini: ${rawTitle}`,
-    `Sorotan: ${rawTitle}`,
-    `${rawTitle}`
+    `Kabar Terbaru: ${rawTitle}`,
+    `Dampak Peristiwa ${rawTitle}`,
+    `Sorotan Publik: ${rawTitle}`,
+    `Terkait Kasus ${rawTitle}`
   ];
   rewrittenTitle = titleTemplates[Math.floor(Math.random() * titleTemplates.length)];
   if (rewrittenTitle.length > 69) {
@@ -210,17 +211,20 @@ Kembalikan HANYA JSON tersebut tanpa markdown backticks.`
   // Rewrite konten asli secara rule-based
   let baseContent = ruleBasedRephrase(content);
 
-  // Perluas konten secara dinamis menggunakan topik agar isi berita selaras dan nyambung
+  // Tentukan Dateline Lokasi berdasarkan kategori
+  const locationPrefix = category === "Cikarang" ? "**CIKARANG**" : category === "Bekasi" ? "**BEKASI**" : "**JAKARTA**";
+
+  // Perluas konten secara dinamis menggunakan gaya jurnalis senior (dateline, quote, kronologi)
   const paddingParagraphs = [
-    `Perkembangan informasi mengenai ${topic} saat ini tengah menjadi sorotan tajam publik, khususnya bagi warga di kawasan Cikarang, Bekasi, dan sekitarnya. Kejadian ini memicu diskusi hangat di tengah masyarakat yang menilai bahwa aspek ketertiban dan kepatuhan terhadap aturan yang berlaku harus selalu dikedepankan demi kenyamanan bersama.`,
-    `Menyikapi maraknya tanggapan seputar ${topic}, beberapa tokoh masyarakat setempat mengimbau agar semua pihak tetap tenang dan menyikapi informasi ini secara bijak. Diperlukan adanya klarifikasi resmi lebih lanjut dari pihak-pihak terkait agar tidak timbul kesalahpahaman atau disinformasi yang meluas di jejaring sosial.`,
+    `Insiden mengenai ${topic} saat ini tengah menyedot perhatian publik secara luas di tingkat daerah maupun nasional. Berdasarkan penelusuran lebih lanjut di lapangan, rentetan peristiwa ini telah memicu respon yang cepat serta investigasi dari pihak berwenang guna menemukan jalan keluar terbaik bagi seluruh pihak yang terdampak.`,
+    `Pihak otoritas terkait saat dikonfirmasi menyatakan komitmen penuhnya untuk menindaklanjuti serta mengusut tuntas insiden tersebut. "Kami sedang melakukan investigasi mendalam terkait kronologi kejadian ${topic} ini. Jajaran petugas di lapangan berupaya mengumpulkan bukti-bukti pendukung dan akan mengambil tindakan tegas yang presisi sesuai regulasi serta aturan hukum yang berlaku," ujar salah satu perwakilan instansi berwenang saat konferensi pers.`,
     category === "Bisnis" || category === "Ekonomi" 
-      ? `Terkait kasus ${topic} ini, pengaruhnya diperkirakan akan memberikan dampak langsung terhadap operasional usaha di sekitar Cikarang. Jajaran pengurus kawasan industri bersama asosiasi terkait dihimbau untuk menyusun rencana langkah antisipasi operasional agar tidak mengganggu roda ekonomi lokal.`
-      : `Bagi wilayah Cikarang yang merupakan salah satu sentra aktivitas penting di Bekasi, peristiwa ${topic} ini menjadi pengingat penting akan pentingnya pengawasan dan edukasi publik yang berkesinambungan. Penerapan disiplin dan kesadaran individu dinilai menjadi fondasi utama dalam menjaga situasi lingkungan sosial yang tertib dan kondusif.`,
-    `Hingga saat ini, perkembangan kasus ${topic} masih terus dipantau secara berkala oleh publik. Diharapkan solusi konkret dapat segera dirumuskan oleh pihak berwenang guna memberikan kejelasan serta rasa aman bagi seluruh lapisan masyarakat di Kabupaten Bekasi.`
+      ? `Bagi kawasan industri Cikarang yang menjadi basis operasional berbagai korporasi, fluktuasi yang dipicu oleh kasus ${topic} ini diperkirakan dapat mempengaruhi stabilitas dunia usaha lokal. Asosiasi pengusaha setempat menghimbau agar pelaku industri tetap tenang serta bersiap melakukan mitigasi operasional jangka pendek guna mengamankan aktivitas produksi daerah.`
+      : `Bagi Kabupaten Bekasi dan area Cikarang yang dihuni ratusan ribu warga dari luar daerah, polemik perihal ${topic} ini menjadi alarm pentingnya sosialisasi aturan publik yang masif. Pengamat sosial menilai bahwa edukasi tata tertib secara persisten menjadi instrumen utama dalam merawat kerukunan dan menciptakan ketertiban lingkungan kemasyarakatan.`,
+    `Hingga berita ini diturunkan, jajaran dinas terkait dilaporkan masih terus berkoordinasi secara intensif dengan berbagai elemen kunci di lapangan. Publik menaruh harapan besar agar penyelesaian masalah ${topic} dapat diselesaikan dengan adil, transparan, serta mengedepankan asas musyawarah demi kebaikan bersama.`
   ];
 
-  rewrittenContent = baseContent + "\n\n" + paddingParagraphs.join("\n\n") + `\n\nSumber: ${source}`;
+  rewrittenContent = `${locationPrefix} - ` + baseContent + "\n\n" + paddingParagraphs.join("\n\n") + `\n\nSumber: ${source}`;
 
   // Buat Meta Description (maks 155 char)
   let rawMeta = `Baca ulasan lengkap mengenai ${title}. Radar Cikarang menyajikan analisis mendalam dan berita terpercaya untuk Anda hari ini.`;
