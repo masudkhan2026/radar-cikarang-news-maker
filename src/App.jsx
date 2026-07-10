@@ -743,12 +743,21 @@ export default function App() {
                       <div className="editor-inputs">
                         
                         <div className="input-group">
-                          <label className="input-label">
-                            Judul Berita Teroptimasi SEO
-                            <span style={{ color: rewrittenTitle.length > 70 || rewrittenTitle.length < 40 ? '#f59e0b' : '#10b981' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <label className="input-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              Judul Berita Teroptimasi SEO
+                              <button 
+                                className="copy-small-btn"
+                                onClick={() => handleCopy(rewrittenTitle, "Judul berita disalin!")}
+                                title="Salin Judul"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </label>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: rewrittenTitle.length > 70 || rewrittenTitle.length < 40 ? '#f59e0b' : '#10b981' }}>
                               {rewrittenTitle.length} Karakter
                             </span>
-                          </label>
+                          </div>
                           <input 
                             type="text" 
                             className="text-input" 
@@ -759,7 +768,18 @@ export default function App() {
                         </div>
 
                         <div className="input-group">
-                          <label className="input-label">Slug URL (Ramah SEO)</label>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <label className="input-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              Slug URL (Ramah SEO)
+                              <button 
+                                className="copy-small-btn"
+                                onClick={() => handleCopy(slug, "Slug URL disalin!")}
+                                title="Salin Slug URL"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </label>
+                          </div>
                           <input 
                             type="text" 
                             className="text-input" 
@@ -769,12 +789,21 @@ export default function App() {
                         </div>
 
                         <div className="input-group">
-                          <label className="input-label">
-                            Meta Deskripsi
-                            <span style={{ color: metaDescription.length > 165 || metaDescription.length < 110 ? '#f59e0b' : '#10b981' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <label className="input-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              Meta Deskripsi
+                              <button 
+                                className="copy-small-btn"
+                                onClick={() => handleCopy(metaDescription, "Meta deskripsi disalin!")}
+                                title="Salin Meta Deskripsi"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </label>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: metaDescription.length > 165 || metaDescription.length < 110 ? '#f59e0b' : '#10b981' }}>
                               {metaDescription.length} / 160 Karakter
                             </span>
-                          </label>
+                          </div>
                           <textarea 
                             className="text-input" 
                             style={{ minHeight: '60px', resize: 'none' }}
@@ -784,12 +813,21 @@ export default function App() {
                         </div>
 
                         <div className="input-group">
-                          <label className="input-label">
-                            Isi Berita Baru (Gaya Radar Cikarang)
-                            <span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <label className="input-label" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              Isi Berita Baru (Gaya Radar Cikarang)
+                              <button 
+                                className="copy-small-btn"
+                                onClick={() => handleCopy(rewrittenContent, "Isi berita baru disalin!")}
+                                title="Salin Isi Berita"
+                              >
+                                <Copy size={12} />
+                              </button>
+                            </label>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#10b981' }}>
                               {rewrittenContent.split(/\s+/).filter(w => w.length > 0).length} Kata
                             </span>
-                          </label>
+                          </div>
                           <textarea 
                             className="text-input textarea-input" 
                             value={rewrittenContent} 
