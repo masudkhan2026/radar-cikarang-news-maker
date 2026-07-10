@@ -793,3 +793,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
 }
 
+/* Custom loading spin icon */
+@keyframes spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-icon {
+  animation: spin-anim 1s linear infinite;
+}
+

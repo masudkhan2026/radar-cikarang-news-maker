@@ -841,9 +841,36 @@ export default function App() {
 
                         {/* Checklist Optimasi SEO */}
                         <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
-                          <h4 style={{ fontSize: '0.85rem', color: '#fff', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <FileText size={14} /> Checklist SEO
-                          </h4>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                            <h4 style={{ fontSize: '0.85rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.25rem', margin: 0 }}>
+                              <FileText size={14} /> Checklist SEO
+                            </h4>
+                            {/* Tombol Muat Ulang jika ada isu/warning/danger */}
+                            {seoTips.some(tip => tip.status === 'warning' || tip.status === 'danger') && (
+                              <button
+                                className="refresh-btn"
+                                style={{ 
+                                  fontSize: '0.75rem', 
+                                  padding: '0.25rem 0.5rem', 
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.25rem',
+                                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                                  background: 'rgba(245, 158, 11, 0.1)',
+                                  color: '#f59e0b',
+                                  cursor: 'pointer',
+                                  height: '24px'
+                                }}
+                                onClick={handleRewrite}
+                                disabled={isRewriting}
+                                title="Jalankan ulang rewrite untuk memperbaiki isu SEO"
+                              >
+                                <RefreshCw size={10} className={isRewriting ? "spin-icon" : ""} />
+                                {isRewriting ? "Memproses..." : "Muat Ulang AI"}
+                              </button>
+                            )}
+                          </div>
                           <div className="seo-tips-list">
                             {seoTips.map((tip, index) => (
                               <div key={index} className={`seo-tip-item ${tip.status}`}>
