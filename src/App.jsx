@@ -436,16 +436,17 @@ export default function App() {
     setIsGeneratingIllustration(true);
     // Ekstrak keyword pencarian gambar dari judul
     const topic = rewrittenTitle
-      .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
-      .split(' ')
-      .filter(w => w.length > 4)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 3 && w !== "yang" && w !== "untuk" && w !== "dengan" && w !== "dalam" && w !== "dari" && w !== "oleh")
       .slice(0, 2)
       .join(',');
 
     try {
-      // Gunakan Unsplash Source API gratis untuk mengambil gambar 16:9 yang relevan secara acak
-      const randomSeed = Math.floor(Math.random() * 1000);
-      const imageUrl = `https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&h=450&q=80&sig=${randomSeed}&query=${encodeURIComponent(topic || 'news')}`;
+      // Gunakan Lorem Flickr dengan parameter pencarian dinamis & lock ID agar selalu berbeda
+      const randomSeed = Math.floor(Math.random() * 10000);
+      const imageUrl = `https://loremflickr.com/800/450/${encodeURIComponent(topic || 'news')}?lock=${randomSeed}`;
       
       // Berikan efek delay animasi pembuatan
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -464,7 +465,9 @@ export default function App() {
     if (!illustrationUrl) return;
     try {
       showToast("Mengunduh gambar...");
-      const response = await fetch(illustrationUrl);
+      // Gunakan corsproxy.io untuk melewati blokir CORS saat fetch blob gambar
+      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(illustrationUrl)}`;
+      const response = await fetch(proxyUrl);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       
@@ -477,14 +480,8 @@ export default function App() {
       URL.revokeObjectURL(blobUrl);
       showToast("Gambar berhasil diunduh!");
     } catch (error) {
-      // Fallback jika terjadi isu CORS
-      const link = document.createElement("a");
-      link.href = illustrationUrl;
-      link.target = "_blank";
-      link.download = `ilustrasi-${slug || 'radar-cikarang'}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      console.warn("Gagal unduh langsung, membuka di tab baru:", error);
+      window.open(illustrationUrl, "_blank");
       showToast("Membuka gambar di tab baru untuk diunduh!");
     }
   };
@@ -912,7 +909,7 @@ export default function App() {
                               justifyContent: 'center', 
                               borderColor: 'var(--text-muted)',
                               background: 'rgba(255,255,255,0.02)',
-                              color: '#fff',
+                              color: 'var(--text-primary)',
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.5rem',
