@@ -82,6 +82,9 @@ export async function rewriteNews(title, content, category = "Nasional", apiKey 
   // Simulasi waktu pemrosesan AI (1.5 detik)
   await new Promise(resolve => setTimeout(resolve, 1500));
 
+  const currentDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const currentYear = new Date().getFullYear();
+
   let rewrittenTitle = "";
   let rewrittenContent = "";
   let focusKeywords = [];
@@ -111,11 +114,11 @@ export async function rewriteNews(title, content, category = "Nasional", apiKey 
           contents: [{
             parts: [{
               text: `Anda adalah editor berita profesional dan pakar SEO untuk portal berita lokal radarcikarang.com. 
-Tulis ulang berita berikut agar unik, bebas plagiarisme, menarik dibaca, dan dioptimalkan secara SEO. 
+Hari ini adalah tanggal ${currentDate}. Tulis ulang berita berikut agar unik, bebas plagiarisme, menarik dibaca, dan dioptimalkan secara SEO. 
 
 Aturan penulisan wajib:
 1. Berikan judul berita baru yang menarik perhatian (click-worthy). Panjang judul HARUS kurang dari 70 karakter (huruf/spasi, bukan kata).
-2. Tulis ulang konten berita secara mendalam agar memiliki panjang antara 300 sampai 600 kata. Anda harus memperluas pembahasan berita dengan menambahkan detail latar belakang, implikasi bagi publik, atau sudut pandang lokal yang relevan untuk mencapai panjang tersebut (jangan diisi pengulangan kalimat kosong).
+2. Tulis ulang konten berita secara mendalam agar memiliki panjang antara 300 sampai 600 kata. Anda harus memperluas pembahasan berita dengan menambahkan detail latar belakang, implikasi bagi publik, atau sudut pandang lokal yang relevan untuk mencapai panjang tersebut (jangan diisi pengulangan kalimat kosong). Asumsikan kejadian berita berlangsung baru-baru ini atau pada tahun berjalan (${currentYear}). Jangan menggunakan tahun lampau seperti 2023 atau 2024 dalam badan berita kecuali jika merujuk pada sejarah masa lalu.
 3. Selipkan 1-2 kalimat lokal yang relevan dengan pembaca di Cikarang/Bekasi atau dunia industri (karena Cikarang adalah kawasan industri terbesar di Asia Tenggara) di dalam tubuh artikel.
 4. Di bagian paling akhir isi berita (paragraf terakhir), Anda WAJIB menambahkan baris sumber dengan format: "Sumber: ${source}" (tanpa tanda kutip). Contoh: "Sumber: ${source}".
 5. Tentukan 1 Meta Description yang menarik (panjang antara 120-160 karakter).
